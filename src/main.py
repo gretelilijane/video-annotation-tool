@@ -2,7 +2,7 @@ import cv2
 import argparse
 import os
 import configparser
-
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--input")
@@ -85,6 +85,16 @@ class Marker:
         self.p2 = (max(coords[0], coords[2]), max(coords[1], coords[3]))
         self.p3 = (min(coords[0], coords[2]), max(coords[1], coords[3]))
         self.p4 = (max(coords[0], coords[2]), min(coords[1], coords[3]))
+    
+    def update_coord(self, index, new_coord):
+        if index == 0:
+            self.p1 = new_coord
+        elif index == 1:
+            self.p2 = new_coord
+        elif index == 2:
+            self.p3 = new_coord
+        elif index == 3:
+            self.p4 = new_coord
 
     def highlight_edge(self, edge):
         self.highlighted_edge = edge
@@ -95,31 +105,27 @@ class Marker:
         if self.highlighted_edge:
             cv2.line(frame, self.highlighted_edge[0], self.highlighted_edge[1], (255, 0, 0), thickness=3)
 
-    def update_marker_corner(corneriasas, values):
-        for i,c in enumerate(corneriasas):
-            self.corners[c] = values[i]
 
 class DefaultMode:
     def on_mousemove(self, c):
         State.mouse = c
         State.draw_frame()
 
-        for marker in State.markers:
+        for marker in State.get_markers():
             edge = marker.get_closest_edge(c)
             marker.highlight_edge(edge)
 
     def on_lbuttondown(self, c, flags):
         # Ctrl + mousedown
         if flags & cv2.EVENT_FLAG_CTRLKEY:
-            for marker in State.markers:
+            for marker in State.get_markers():
                 if marker.contains_coord(c):
-                    State.markers.remove(marker)
-                    State.draw_frame()
+                    State.remove_marker(marker)
                     break
             return
 
         # Mousedown
-        highlighted_markers = list(filter(lambda marker: marker.highlighted_edge != None, State.markers))
+        highlighted_markers = list(filter(lambda marker: marker.highlighted_edge != None, State.get_markers()))
 
         if len(highlighted_markers):
             marker = highlighted_markers[0]
@@ -127,7 +133,7 @@ class DefaultMode:
             return
 
         State.mode = CreateMarkerMode(c)
-    
+
     def on_lbuttonup(self, c):
         pass
 
@@ -136,7 +142,7 @@ class DefaultMode:
             cv2.line(frame, (State.mouse[0], 0), (State.mouse[0], IMAGE_SIZE[1]), (0, 0, 255))
             cv2.line(frame, (0, State.mouse[1]), (IMAGE_SIZE[0], State.mouse[1]), (0, 0, 255))
 
-        for marker in State.markers:
+        for marker in State.get_markers():
             marker.draw(frame)
 
 
@@ -145,8 +151,7 @@ class CreateMarkerMode(DefaultMode):
         self.origin = c
 
     def on_lbuttondown(self, c, flags):
-        State.markers.append(Marker(State.label, (*self.origin, *c)))
-        State.draw_frame()
+        State.add_marker(Marker(State.label, (*self.origin, *c)))
         State.mode = DefaultMode()
 
     def draw_frame(self, frame):
@@ -158,18 +163,28 @@ class ResizeMarkerMode(DefaultMode):
     def __init__(self, marker, edge):
         self.marker = marker
         self.edge = edge
+        self.new_coords = []
 
         # Use y-axis if the x-coords of the edge coordinates are different, x-axis otherwise
         if edge[0][0] == edge[1][0]:
-            self.axis = 0
+            self.change_axis = 0
+            self.fixed_axis = 1
         else:
-            self.axis = 1
+            self.change_axis = 1
+            self.fixed_axis = 0
 
-        self.fixed = list(filter(lambda p: not p in edge, (marker.p1, marker.p2, marker.p3, marker.p4)))
+        self.edge_indices = list(filter(lambda p: p[1] in edge, enumerate((marker.p1, marker.p2, marker.p3, marker.p4))))
 
     def on_mousemove(self, c):
-        print(*self.edge, c[self.axis])
-        # 
+        for coord in self.edge_indices:
+            if self.change_axis:
+                new_coord = (coord[1][self.fixed_axis], c[self.change_axis])
+            else: 
+                new_coord = (c[self.change_axis], coord[1][self.fixed_axis])
+
+            self.marker.update_coord(coord[0], new_coord)
+
+        State.draw_frame()
 
     def on_lbuttonup(self, c):
         State.mode = DefaultMode()
@@ -182,9 +197,24 @@ class ResizeMarkerMode(DefaultMode):
 class State:
     image = None
     mouse = None
-    markers = []
+    markers = [[] for i in range(FRAMES)]
+    frame = None
     label = 1
     mode = DefaultMode()
+
+    @staticmethod
+    def get_markers():
+        return State.markers[State.frame]
+    
+    @staticmethod
+    def add_marker(marker):
+        State.get_markers().append(marker)
+        State.draw_frame()
+    
+    @staticmethod
+    def remove_marker(marker):
+        State.get_markers().remove(marker)
+        State.draw_frame()
 
     @staticmethod
     def draw_frame():
@@ -193,7 +223,8 @@ class State:
         cv2.imshow(WINDOW_NAME, frame)
 
     @staticmethod
-    def on_trackbar(value):
+    def set_frame(value):
+        State.frame = value
         State.image = cv2.imread(os.path.join(FRAMES_PATH, str(value) + ".jpg"))
         State.draw_frame()
 
@@ -209,13 +240,23 @@ class State:
 
 
 cv2.namedWindow(WINDOW_NAME)
-cv2.createTrackbar("", WINDOW_NAME, 0, FRAMES - 1, State.on_trackbar)
+cv2.createTrackbar("Frame", WINDOW_NAME, 0, FRAMES - 1, State.set_frame)
 cv2.setMouseCallback(WINDOW_NAME, State.on_mouse)
-State.on_trackbar(0)
+State.set_frame(0)
 
 # Event loop
 while True:
     key = cv2.waitKey(10)
 
+    if key != -1:
+        print(key)
+
     if key == ord("q"):
         break
+    elif key == 97 and State.frame > 0:
+        print("set it ", State.frame - 1)
+        cv2.setTrackbarPos("Frame", WINDOW_NAME, State.frame - 1)
+    elif key == 100 and State.frame < FRAMES - 1:
+        print("set it ", State.frame + 1)
+        cv2.setTrackbarPos("Frame", WINDOW_NAME, State.frame + 1)
+
