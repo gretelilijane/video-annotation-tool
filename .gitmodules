@@ -1,0 +1,3 @@
+[submodule "lib/DaSiamRPN"]
+path = lib/DaSiamRPN
+url = https://github.com/foolwood/DaSiamRPN.git
