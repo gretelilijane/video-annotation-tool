@@ -1,6 +1,6 @@
 import cv2
 
-SELECT_EDGE_DISTANCE = 10
+from src.constants import SELECT_EDGE_DISTANCE
 
 
 class Marker:

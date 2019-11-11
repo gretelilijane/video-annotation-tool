@@ -1,27 +1,14 @@
 import cv2
-import argparse
 import os
 import configparser
 import numpy as np
 
 from src.track import create_tracker
 from src.marker import Marker
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--input")
-parser.add_argument("--output", default="output/")
-parser.add_argument("--resize", default="1280x720")
-parser.add_argument("--tracker", default="dasiamrpn")
-args = parser.parse_args()
-
-# Constants
-WINDOW_NAME = "Video annotation tool"
-INPUT_FILE_NAME = os.path.split(args.input)[1]
-ABOUT_PATH = os.path.join(args.output, INPUT_FILE_NAME, "about.ini")
-FRAMES_PATH = os.path.join(args.output, INPUT_FILE_NAME, "frames")
-IMAGE_SIZE = tuple([int(size) for size in args.resize.split("x")])
-TRACKER_NAME = args.tracker
+from src.mode.default_mode import DefaultMode
+from src.mode.create_marker_mode import CreateMarkerMode
+from src.mode.resize_marker_mode import ResizeMarkerMode
+from src.constants import *
 
 
 # Initialize output directory
@@ -63,101 +50,13 @@ about.read(ABOUT_PATH)
 FRAMES = int(about["DEFAULT"]["frames"])
 
 
-class DefaultMode:
-    def on_mousemove(self, c):
-        State.mouse = c
-        State.draw_frame()
-
-        for marker in State.get_markers():
-            edge = marker.get_closest_edge(c)
-            marker.highlight_edge(edge)
-
-    def on_lbuttondown(self, c, flags):
-        # Ctrl + mousedown
-        if flags & cv2.EVENT_FLAG_CTRLKEY:
-            for marker in State.get_markers():
-                if marker.contains_coord(c):
-                    State.remove_marker(marker)
-                    break
-            return
-
-        # Mousedown
-        highlighted_markers = list(filter(lambda marker: marker.highlighted_edge != None, State.get_markers()))
-
-        if len(highlighted_markers):
-            marker = highlighted_markers[0]
-            State.mode = ResizeMarkerMode(marker, marker.highlighted_edge)
-            return
-
-        State.mode = CreateMarkerMode(c)
-
-    def on_lbuttonup(self, c):
-        pass
-
-    def draw_frame(self, frame):
-        if State.mouse is not None:
-            cv2.line(frame, (State.mouse[0], 0), (State.mouse[0], IMAGE_SIZE[1]), (0, 0, 255))
-            cv2.line(frame, (0, State.mouse[1]), (IMAGE_SIZE[0], State.mouse[1]), (0, 0, 255))
-
-        for marker in State.get_markers():
-            marker.draw(frame)
-
-
-class CreateMarkerMode(DefaultMode):
-    def __init__(self, c):
-        self.origin = c
-
-    def on_lbuttondown(self, c, flags):
-        State.add_marker(Marker(State.label, (*self.origin, *c)))
-        State.mode = DefaultMode()
-
-    def draw_frame(self, frame):
-        super().draw_frame(frame)
-        Marker(State.label, (*self.origin, *State.mouse)).draw(frame)
-
-
-class ResizeMarkerMode(DefaultMode):
-    def __init__(self, marker, edge):
-        self.marker = marker
-        self.edge = edge
-        self.new_coords = []
-
-        # Use y-axis if the x-coords of the edge coordinates are different, x-axis otherwise
-        if edge[0][0] == edge[1][0]:
-            self.change_axis = 0
-            self.fixed_axis = 1
-        else:
-            self.change_axis = 1
-            self.fixed_axis = 0
-
-        self.edge_indices = list(filter(lambda p: p[1] in edge, enumerate((marker.p1, marker.p2, marker.p3, marker.p4))))
-
-    def on_mousemove(self, c):
-        for coord in self.edge_indices:
-            if self.change_axis:
-                new_coord = (coord[1][self.fixed_axis], c[self.change_axis])
-            else: 
-                new_coord = (c[self.change_axis], coord[1][self.fixed_axis])
-
-            self.marker.update_coord(coord[0], new_coord)
-
-        State.draw_frame()
-
-    def on_lbuttonup(self, c):
-        State.mode = DefaultMode()
-        State.draw_frame()
-    
-    def draw_frame(self, frame):
-        self.marker.draw(frame)
-
-
 class State:
     image = None
     mouse = None
     markers = [[] for i in range(FRAMES)]
     frame = None
     label = 1
-    mode = DefaultMode()
+    mode = None
 
     @staticmethod
     def get_markers():
@@ -187,18 +86,35 @@ class State:
 
     @staticmethod
     def on_mouse(event, x, y, flags, param):
-        cv2.EVENT_FLAG_CTRLKEY
+        State.mouse = (x, y)
+
         if event == cv2.EVENT_MOUSEMOVE:
-            State.mode.on_mousemove((x, y))
+            State.mode.on_mousemove(State.mouse)
         elif event == cv2.EVENT_LBUTTONDOWN:
-            State.mode.on_lbuttondown((x, y), flags)
+            State.mode.on_lbuttondown(State.mouse, flags)
         elif event == cv2.EVENT_LBUTTONUP:
-            State.mode.on_lbuttonup((x, y))
+            State.mode.on_lbuttonup(State.mouse)
+
+    @staticmethod
+    def enter_default_mode():
+        State.mode = DefaultMode(State)
+        State.mode.on_mousemove
+
+    @staticmethod
+    def enter_create_marker_mode(c):
+        State.mode = CreateMarkerMode(State, c)
+    
+    @staticmethod
+    def enter_resize_marker_mode(marker):
+        State.mode = ResizeMarkerMode(State, marker, marker.highlighted_edge)
 
 
 cv2.namedWindow(WINDOW_NAME)
 cv2.createTrackbar("Frame", WINDOW_NAME, 0, FRAMES - 1, State.set_frame)
 cv2.setMouseCallback(WINDOW_NAME, State.on_mouse)
+
+# Initialize state
+State.enter_default_mode()
 State.set_frame(0)
 
 # Event loop
@@ -206,14 +122,12 @@ while True:
     key = cv2.waitKey(10)
 
     if key != -1:
-        print(key)
+        print("keycode:", key)
 
     if key == ord("q"):
         break
     elif key == 97 and State.frame > 0:
-        print("set it ", State.frame - 1)
         cv2.setTrackbarPos("Frame", WINDOW_NAME, State.frame - 1)
     elif key == 100 and State.frame < FRAMES - 1:
-        print("set it ", State.frame + 1)
         cv2.setTrackbarPos("Frame", WINDOW_NAME, State.frame + 1)
 
