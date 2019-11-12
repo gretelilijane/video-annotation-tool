@@ -9,6 +9,5 @@ directory is `output/`, the default resized image size is `1280x720` and the def
 
 ## Usage
 
-* Left mouse down: start creating new marker
-* Left mouse down: stop creating new marker
+* Click and drag: create marker
 * Ctrl + Left mouse button: remove marker

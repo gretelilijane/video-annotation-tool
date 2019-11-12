@@ -1,40 +1,48 @@
 import cv2
 
-from src.constants import IMAGE_SIZE
+from src.constants import WINDOW_NAME, FRAME_TRACKBAR_NAME, FRAMES, IMAGE_SIZE
 
 
 class DefaultMode:
     def __init__(self, state):
         self.state = state
 
-    def on_mousemove(self, c):
+    def on_mousemove(self):
         self.state.draw_frame()
 
         for marker in self.state.get_markers():
-            edge = marker.get_closest_edge(c)
+            edge = marker.get_closest_edge(self.state.mouse)
             marker.highlight_edge(edge)
 
-    def on_lbuttondown(self, c, flags):
+    def on_lbuttondown(self, flags):
         # Ctrl + mousedown
         if flags & cv2.EVENT_FLAG_CTRLKEY:
             for marker in self.state.get_markers():
-                if marker.contains_coord(c):
+                if marker.contains_coord(self.state.mouse):
                     self.state.remove_marker(marker)
                     break
             return
 
         # Mousedown
-        highlighted_markers = list(filter(lambda marker: marker.highlighted_edge != None, self.state.get_markers()))
+        highlighted_markers = list(filter(lambda marker: marker.is_highlighted(), self.state.get_markers()))
 
         if len(highlighted_markers):
             self.state.enter_resize_marker_mode(highlighted_markers[0])
-            highlighted_markers[0].highlight_edge(None)
+            highlighted_markers[0].highlight_edge((None, None))
             return
 
-        self.state.enter_create_marker_mode(c)
+        self.state.enter_create_marker_mode()
 
-    def on_lbuttonup(self, c):
+    def on_lbuttonup(self):
         pass
+
+    def on_key(self, key):
+        if key == 97 and self.state.frame > 0:
+            self.state.set_frame(self.state.frame - 1)
+        elif key == 100 and self.state.frame < FRAMES - 1:
+            self.state.set_frame(self.state.frame + 1)
+        elif key == ord("t") and self.state.frame < FRAMES - 1:
+            self.state.enter_track_mode()
 
     def draw_frame(self, frame):
         if self.state.mouse is not None:
@@ -43,4 +51,3 @@ class DefaultMode:
 
         for marker in self.state.get_markers():
             marker.draw(frame)
-
