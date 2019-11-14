@@ -45,7 +45,8 @@ class State:
         for i in range(len(State.labels)):
             width = label_width if i > 0 else label_width + IMAGE_SIZE[0] % label_width
             thickness = 1 if i != State.label - 1 else 2
-            text_size, baseline = cv2.getTextSize(State.labels[i], cv2.FONT_HERSHEY_SIMPLEX, 0.5, thickness)
+            text = str(i + 1) + ". " + State.labels[i]
+            text_size, baseline = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, thickness)
 
             label_display = np.zeros((LABEL_DISPLAY_HEIGHT, width, 3), dtype=np.uint8)
             label_display[:,:,0] = np.ones((LABEL_DISPLAY_HEIGHT, width), dtype=np.uint8) * COLORS[i % len(COLORS)][0]
@@ -53,7 +54,7 @@ class State:
             label_display[:,:,2] = np.ones((LABEL_DISPLAY_HEIGHT, width), dtype=np.uint8) * COLORS[i % len(COLORS)][2]
 
             img = np.concatenate((img, label_display), axis=1)
-            cv2.putText(img, State.labels[i], (i*width + width//2 - text_size[0]//2, LABEL_DISPLAY_HEIGHT//2 + baseline), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness)
+            cv2.putText(img, text, (i*width + width//2 - text_size[0]//2, LABEL_DISPLAY_HEIGHT//2 + baseline), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness)
 
         return img
 
@@ -131,5 +132,11 @@ while True:
 
     if key == ord("q"):
         break
+    elif key >= 49 and key <= 57:
+        label_id = key - 48
+
+        if label_id <= len(State.labels):
+            State.label = label_id
+            State.draw_frame()
 
 db.close()
