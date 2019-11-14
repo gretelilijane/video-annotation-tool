@@ -6,7 +6,7 @@ from src.mode.default_mode import DefaultMode
 from src.mode.create_marker_mode import CreateMarkerMode
 from src.mode.resize_marker_mode import ResizeMarkerMode
 from src.mode.track_mode import TrackMode
-from src.marker.rect_marker import RectMarker
+from src.marker.marker_db import get_markers_on_frame
 from src.constants import *
 
 
@@ -16,6 +16,7 @@ class State:
     markers = []
     frame = None
     label = 1
+    labels = LABELS
     mode = None
 
     @staticmethod
@@ -37,9 +38,30 @@ class State:
             State.draw_frame()
 
     @staticmethod
+    def get_label_display():
+        label_width = int(IMAGE_SIZE[0] / len(State.labels))
+        img = np.zeros((LABEL_DISPLAY_HEIGHT, 0, 3), dtype=np.uint8)
+
+        for i in range(len(State.labels)):
+            width = label_width if i > 0 else label_width + IMAGE_SIZE[0] % label_width
+            thickness = 1 if i != State.label - 1 else 2
+            text_size, baseline = cv2.getTextSize(State.labels[i], cv2.FONT_HERSHEY_SIMPLEX, 0.5, thickness)
+
+            label_display = np.zeros((LABEL_DISPLAY_HEIGHT, width, 3), dtype=np.uint8)
+            label_display[:,:,0] = np.ones((LABEL_DISPLAY_HEIGHT, width), dtype=np.uint8) * COLORS[i % len(COLORS)][0]
+            label_display[:,:,1] = np.ones((LABEL_DISPLAY_HEIGHT, width), dtype=np.uint8) * COLORS[i % len(COLORS)][1]
+            label_display[:,:,2] = np.ones((LABEL_DISPLAY_HEIGHT, width), dtype=np.uint8) * COLORS[i % len(COLORS)][2]
+
+            img = np.concatenate((img, label_display), axis=1)
+            cv2.putText(img, State.labels[i], (i*width + width//2 - text_size[0]//2, LABEL_DISPLAY_HEIGHT//2 + baseline), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness)
+
+        return img
+
+    @staticmethod
     def draw_frame():
         frame = State.image.copy()
         State.mode.draw_frame(frame)
+        frame = np.concatenate((frame, State.get_label_display()), axis=0)
         cv2.imshow(WINDOW_NAME, frame)
 
     @staticmethod
@@ -49,8 +71,12 @@ class State:
     @staticmethod
     def set_frame_from_trackbar(frame):
         State.frame = frame
-        State.image = cv2.imread(os.path.join(FRAMES_PATH, str(State.frame) + ".jpg"))
-        State.markers = RectMarker.findall(State.frame)
+
+        db_cur.execute("SELECT data FROM images WHERE asset_id = ? AND frame = ?", (ASSET_ID, State.frame))
+        row = db_cur.fetchone()
+
+        State.image = cv2.imdecode(np.frombuffer(row[0], np.uint8), cv2.IMREAD_UNCHANGED)
+        State.markers = get_markers_on_frame(State.frame)
         State.draw_frame()
 
     @staticmethod
@@ -87,7 +113,7 @@ class State:
 
 # Set up UI
 cv2.namedWindow(WINDOW_NAME)
-cv2.createTrackbar("Frame", WINDOW_NAME, 0, FRAMES - 1, State.set_frame_from_trackbar)
+cv2.createTrackbar("Frame", WINDOW_NAME, 0, FRAME_COUNT - 1, State.set_frame_from_trackbar)
 cv2.setMouseCallback(WINDOW_NAME, State.on_mouse)
 
 

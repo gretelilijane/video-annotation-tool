@@ -1,6 +1,6 @@
 import cv2
 
-from src.constants import WINDOW_NAME, FRAME_TRACKBAR_NAME, FRAMES, IMAGE_SIZE
+from src.constants import WINDOW_NAME, FRAME_TRACKBAR_NAME, FRAME_COUNT, IMAGE_SIZE
 
 
 class DefaultMode:
@@ -19,6 +19,7 @@ class DefaultMode:
         if flags & cv2.EVENT_FLAG_CTRLKEY:
             for marker in self.state.get_markers():
                 if marker.contains_coord(self.state.mouse):
+                    marker.remove()
                     self.state.remove_marker(marker)
                     break
             return
@@ -39,9 +40,9 @@ class DefaultMode:
     def on_key(self, key):
         if key == 97 and self.state.frame > 0:
             self.state.set_frame(self.state.frame - 1)
-        elif key == 100 and self.state.frame < FRAMES - 1:
+        elif key == 100 and self.state.frame < FRAME_COUNT - 1:
             self.state.set_frame(self.state.frame + 1)
-        elif key == ord("t") and self.state.frame < FRAMES - 1:
+        elif key == ord("t") and self.state.frame < FRAME_COUNT - 1:
             self.state.enter_track_mode()
 
     def draw_frame(self, frame):

@@ -1,17 +1,20 @@
 import cv2
 import numpy as np
 
-from src.marker.db_marker import DbMarker
-from src.constants import SELECT_EDGE_DISTANCE, db_cur
+from src.constants import SELECT_EDGE_DISTANCE, COLORS, db_cur
+from src.marker.base_marker import BaseMarker
 
 
-class RectMarker(DbMarker):
-    DB_PARAMS = ("x_min", "y_min", "x_max", "y_max")
+class RectMarker(BaseMarker):
+    DB_TABLE = "rect_markers"
+    DB_COLUMNS = { "x_min": "INTEGER", "y_min": "INTEGER", "x_max": "INTEGER", "y_max": "INTEGER" }
 
-    def __init__(self, frame, label, coords):
-        super().__init__(frame, label)
+    def init(self, *coords):
         self.highlighted_edge = (None, None)
         self.set_coords(coords)
+
+    def get_db_values(self):
+        return self.get_coords().tolist()
 
     def contains_coord(self, c):
         coords = self.get_coords()
@@ -58,30 +61,18 @@ class RectMarker(DbMarker):
         return self.highlighted_edge[0] is not None or self.highlighted_edge[1] is not None
 
     def draw(self, frame):
+        color = COLORS[(self.label_id - 1) % len(COLORS)]
         coords = self.get_coords()
-        cv2.rectangle(frame, tuple(coords[0:2]), tuple(coords[2:4]), (255, 0, 0))
+        cv2.rectangle(frame, tuple(coords[0:2]), tuple(coords[2:4]), color)
 
         if self.highlighted_edge[0] is not None:
             cv2.line(frame,
                 (coords[self.highlighted_edge[0]], coords[1]),
                 (coords[self.highlighted_edge[0]], coords[3]),
-                (255, 0, 0), thickness=3)
+                color, thickness=3)
 
         if self.highlighted_edge[1] is not None:
             cv2.line(frame,
                 (coords[0], coords[self.highlighted_edge[1]]),
                 (coords[2], coords[self.highlighted_edge[1]]),
-                (255, 0, 0), thickness=3)
-
-    def get_db_params(self):
-        return self.coords.tolist()
-
-    @staticmethod
-    def findall(frame):
-        markers = []
-        db_cur.execute("SELECT * FROM rect_markers WHERE frame=?", (frame, ))
-
-        for row in db_cur.fetchall():
-            markers.append(RectMarker(frame, row[1], row[2:6]))
-
-        return markers
+                color, thickness=3)

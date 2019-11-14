@@ -35,6 +35,7 @@ class ResizeMarkerMode(DefaultMode):
         self.state.draw_frame()
 
     def on_lbuttonup(self):
+        self.marker.save()
         self.state.enter_default_mode()
 
     def draw_frame(self, frame):
