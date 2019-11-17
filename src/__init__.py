@@ -9,7 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="NO_INPUT")
 parser.add_argument("--output", default="output.db")
 parser.add_argument("--resize", default="640x360")
-parser.add_argument("--tracker", default="dasiamrpn")
+parser.add_argument("--tracker", default="csrt")
 parser.add_argument("--labels", default="object")
 args = parser.parse_args()
 
@@ -45,8 +45,6 @@ db.commit()
 
 
 # Prepare labels
-LABELS = []
-
 for label_name in USED_LABELS:
     try:
         db.execute("INSERT INTO labels (name) VALUES (?)", (label_name,))
@@ -54,8 +52,8 @@ for label_name in USED_LABELS:
     except Exception:
         pass
 
-    db.execute("SELECT id, name FROM labels WHERE name=?", (label_name,))
-    LABELS.append(db.fetchone())
+db.execute("SELECT id, name FROM labels")
+LABELS = db.fetchall()
 
 
 # Prepare asset
