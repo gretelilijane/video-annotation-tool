@@ -20,7 +20,7 @@ from lib.DaSiamRPN.code.net import SiamRPNvot
 
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-MODEL_PATH = join(dirname(__file__), "..", "..", "lib", "models", "SiamRPNVOT.model")
+MODEL_PATH = join(dirname(__file__), "..", "..", "pretrained_models", "SiamRPNVOT.model")
 
 
 class DaSiamRPNTracker:

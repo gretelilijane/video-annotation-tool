@@ -7,7 +7,7 @@ from src import db
 # Get program arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="NO_INPUT")
-parser.add_argument("--output", default="output.db")
+parser.add_argument("--output", default="output")
 parser.add_argument("--resize", default="640x360")
 parser.add_argument("--tracker", default="csrt")
 parser.add_argument("--labels", default="object")
@@ -17,8 +17,10 @@ args = parser.parse_args()
 # Constants
 WINDOW_NAME = "Video annotation tool"
 FRAME_TRACKBAR_NAME = "Frame"
+INPUT_FILE_PATH = args.input
 INPUT_FILE_NAME = os.path.split(args.input)[1]
-DB_PATH = args.output
+OUTPUT_DIRECTORY = args.output
+DB_PATH = os.path.join(OUTPUT_DIRECTORY, "sqlite.db")
 TRACKER_NAME = args.tracker
 TRACKER_FRAME_SKIP = 10
 SELECT_EDGE_DISTANCE = 10

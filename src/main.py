@@ -77,7 +77,7 @@ class State:
     def set_frame_from_trackbar(frame):
         State.frame = frame
 
-        db.execute("SELECT data FROM images WHERE asset_id = ? AND frame = ?", (ASSET_ID, State.frame))
+        db.execute("SELECT data FROM images WHERE asset_id=? AND frame=?", (ASSET_ID, State.frame))
         row = db.fetchone()
 
         State.image = cv2.imdecode(np.frombuffer(row[0], np.uint8), cv2.IMREAD_UNCHANGED)
