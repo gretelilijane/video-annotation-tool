@@ -2,12 +2,13 @@ import cv2
 import os
 import numpy as np
 
+from src import db
 from src.mode.default_mode import DefaultMode
 from src.mode.create_marker_mode import CreateMarkerMode
 from src.mode.resize_marker_mode import ResizeMarkerMode
 from src.mode.track_mode import TrackMode
 from src.marker.marker_db import get_markers_on_frame
-from src.constants import *
+from src import *
 
 
 class State:
@@ -15,8 +16,7 @@ class State:
     mouse = None
     markers = []
     frame = None
-    label = 1
-    labels = LABELS
+    label = 0
     mode = None
 
     @staticmethod
@@ -39,13 +39,13 @@ class State:
 
     @staticmethod
     def get_label_display():
-        label_width = int(IMAGE_SIZE[0] / len(State.labels))
+        label_width = int(IMAGE_SIZE[0] / len(LABELS))
         img = np.zeros((LABEL_DISPLAY_HEIGHT, 0, 3), dtype=np.uint8)
 
-        for i in range(len(State.labels)):
+        for i in range(len(LABELS)):
             width = label_width if i > 0 else label_width + IMAGE_SIZE[0] % label_width
-            thickness = 1 if i != State.label - 1 else 2
-            text = str(i + 1) + ". " + State.labels[i]
+            thickness = 1 if i != State.label else 2
+            text = str(i + 1) + ". " + LABELS[i][1]
             text_size, baseline = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, thickness)
 
             label_display = np.zeros((LABEL_DISPLAY_HEIGHT, width, 3), dtype=np.uint8)
@@ -57,6 +57,10 @@ class State:
             cv2.putText(img, text, (i*width + width//2 - text_size[0]//2, LABEL_DISPLAY_HEIGHT//2 + baseline), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness)
 
         return img
+
+    @staticmethod
+    def get_selected_label_id():
+        return LABELS[State.label][0]
 
     @staticmethod
     def draw_frame():
@@ -73,8 +77,8 @@ class State:
     def set_frame_from_trackbar(frame):
         State.frame = frame
 
-        db_cur.execute("SELECT data FROM images WHERE asset_id = ? AND frame = ?", (ASSET_ID, State.frame))
-        row = db_cur.fetchone()
+        db.execute("SELECT data FROM images WHERE asset_id = ? AND frame = ?", (ASSET_ID, State.frame))
+        row = db.fetchone()
 
         State.image = cv2.imdecode(np.frombuffer(row[0], np.uint8), cv2.IMREAD_UNCHANGED)
         State.markers = get_markers_on_frame(State.frame)
@@ -132,11 +136,11 @@ while True:
 
     if key == ord("q"):
         break
-    elif key >= 49 and key <= 57:
-        label_id = key - 48
+    elif key >= 49 and key < 57:
+        label_index = key - 49
 
-        if label_id <= len(State.labels):
-            State.label = label_id
+        if label_index < len(LABELS):
+            State.label = label_index
             State.draw_frame()
 
 db.close()

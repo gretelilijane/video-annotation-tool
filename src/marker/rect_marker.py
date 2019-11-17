@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from src.constants import SELECT_EDGE_DISTANCE, COLORS, db_cur
+from src import SELECT_EDGE_DISTANCE, COLORS
 from src.marker.base_marker import BaseMarker
 
 

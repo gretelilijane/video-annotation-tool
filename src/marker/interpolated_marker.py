@@ -1,6 +1,5 @@
 import numpy as np
 
-from src.constants import db_cur
 from src.marker.marker_db import get_marker_by_id
 from src.marker.rect_marker import RectMarker
 

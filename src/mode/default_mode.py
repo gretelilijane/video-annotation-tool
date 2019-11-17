@@ -1,6 +1,6 @@
 import cv2
 
-from src.constants import WINDOW_NAME, FRAME_TRACKBAR_NAME, FRAME_COUNT, IMAGE_SIZE
+from src import WINDOW_NAME, FRAME_TRACKBAR_NAME, FRAME_COUNT, IMAGE_SIZE, COLORS
 
 
 class DefaultMode:
@@ -47,8 +47,9 @@ class DefaultMode:
 
     def draw_frame(self, frame):
         if self.state.mouse is not None:
-            cv2.line(frame, (self.state.mouse[0], 0), (self.state.mouse[0], IMAGE_SIZE[1]), (0, 0, 255))
-            cv2.line(frame, (0, self.state.mouse[1]), (IMAGE_SIZE[0], self.state.mouse[1]), (0, 0, 255))
+            selected_label_color = COLORS[(self.state.get_selected_label_id() - 1) % len(COLORS)]
+            cv2.line(frame, (self.state.mouse[0], 0), (self.state.mouse[0], IMAGE_SIZE[1]), selected_label_color)
+            cv2.line(frame, (0, self.state.mouse[1]), (IMAGE_SIZE[0], self.state.mouse[1]), selected_label_color)
 
         for marker in self.state.get_markers():
             marker.draw(frame)

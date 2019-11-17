@@ -1,7 +1,7 @@
 import cv2
 
 from src.mode.default_mode import DefaultMode
-from src.constants import db
+from src import db
 
 
 class ResizeMarkerMode(DefaultMode):

@@ -4,6 +4,8 @@ import argparse
 import configparser
 import sqlite3
 
+from src import db
+
 # Get program arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="NO_INPUT")
@@ -22,7 +24,7 @@ DB_PATH = args.output
 TRACKER_NAME = args.tracker
 TRACKER_FRAME_SKIP = 10
 SELECT_EDGE_DISTANCE = 10
-LABELS = args.labels.split(",")
+USED_LABELS = args.labels.split(",")
 LABEL_DISPLAY_HEIGHT = 30
 COLORS = (
     (164, 0, 0),
@@ -30,21 +32,38 @@ COLORS = (
     (0, 0, 164)
 )
 
-# Open database
-db = sqlite3.connect(DB_PATH)
-db_cur = db.cursor()
 
-#db_cur.execute("DROP TABLE assets")
-db_cur.execute("CREATE TABLE IF NOT EXISTS assets (id INTEGER PRIMARY KEY, name TEXT, frame_count INTEGER, width INTEGER, height INTEGER)")
-#db_cur.execute("DROP TABLE images")
-db_cur.execute("CREATE TABLE IF NOT EXISTS images (asset_id INTEGER, frame INTEGER, data BLOB)")
+# Open database
+db.connect(DB_PATH)
+
+#db.execute("DROP TABLE labels")
+db.execute("CREATE TABLE IF NOT EXISTS labels (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE)")
+#db.execute("DROP TABLE assets")
+db.execute("CREATE TABLE IF NOT EXISTS assets (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE, frame_count INTEGER, width INTEGER, height INTEGER)")
+#db.execute("DROP TABLE images")
+db.execute("CREATE TABLE IF NOT EXISTS images (asset_id INTEGER, frame INTEGER, data BLOB)")
+
+
+# Prepare labels
+LABELS = []
+
+for label_name in USED_LABELS:
+    try:
+        db.execute("INSERT INTO labels (name) VALUES (?)", (label_name,))
+        db.commit()
+    except Exception:
+        pass
+
+    db.execute("SELECT id, name FROM labels WHERE name=?", (label_name,))
+    LABELS.append(db.fetchone())
+
 
 # Prepare asset
 if INPUT_FILE_NAME == "NO_INPUT":
     ASSET_ID = 0
 else:
-    db_cur.execute("SELECT id, frame_count, width, height FROM assets WHERE name = ? LIMIT 1", (INPUT_FILE_NAME, ))
-    row = db_cur.fetchone()
+    db.execute("SELECT id, frame_count, width, height FROM assets WHERE name = ?", (INPUT_FILE_NAME, ))
+    row = db.fetchone()
 
     if row is not None:
         ASSET_ID = row[0]
@@ -55,11 +74,11 @@ else:
         FRAME_COUNT = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
         IMAGE_SIZE = tuple([int(size) for size in args.resize.split("x")])
 
-        db_cur.execute("INSERT INTO assets (name, frame_count, width, height) VALUES (?, ?, ?, ?)", (
+        db.execute("INSERT INTO assets (name, frame_count, width, height) VALUES (?, ?, ?, ?)", (
             INPUT_FILE_NAME, FRAME_COUNT, *IMAGE_SIZE
         ))
 
-        ASSET_ID = db_cur.lastrowid
+        ASSET_ID = db.lastrowid()
 
         # Extract and resize all frames
         images = []
@@ -71,5 +90,6 @@ else:
             images.append((ASSET_ID, frame, blob))
             print(frame)
 
-        db_cur.executemany("INSERT INTO images (asset_id, frame, data) VALUES (?, ?, ?)", images)
-        db.commit()
+        db.executemany("INSERT INTO images (asset_id, frame, data) VALUES (?, ?, ?)", images)
+
+db.commit()

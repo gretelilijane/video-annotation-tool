@@ -11,7 +11,7 @@ class CreateMarkerMode(DefaultMode):
 
     def on_lbuttonup(self):
         if self.state.mouse != self.origin:
-            marker = RectMarker(None, self.state.frame, self.state.label, 1, *self.origin, *self.state.mouse)
+            marker = RectMarker(None, self.state.frame, self.state.get_selected_label_id(), 1, *self.origin, *self.state.mouse)
             marker.save()
 
             self.state.add_marker(marker)
@@ -20,4 +20,4 @@ class CreateMarkerMode(DefaultMode):
 
     def draw_frame(self, frame):
         super().draw_frame(frame)
-        RectMarker(None, self.state.frame, self.state.label, 0, *self.origin, *self.state.mouse).draw(frame)
+        RectMarker(None, self.state.frame, self.state.get_selected_label_id(), 0, *self.origin, *self.state.mouse).draw(frame)

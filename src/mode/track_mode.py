@@ -4,7 +4,7 @@ from src.mode.default_mode import DefaultMode
 from src.track import create_tracker
 from src.marker.rect_marker import RectMarker
 from src.marker.interpolated_marker import InterpolatedMarker
-from src.constants import TRACKER_NAME, TRACKER_FRAME_SKIP
+from src import TRACKER_NAME, TRACKER_FRAME_SKIP
 
 
 class TrackMode(DefaultMode):
