@@ -1,8 +1,6 @@
 import os
 import cv2
 import argparse
-import configparser
-import sqlite3
 
 from src import db
 
@@ -42,6 +40,8 @@ db.execute("CREATE TABLE IF NOT EXISTS labels (id INTEGER PRIMARY KEY, name TEXT
 db.execute("CREATE TABLE IF NOT EXISTS assets (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE, frame_count INTEGER, width INTEGER, height INTEGER)")
 #db.execute("DROP TABLE images")
 db.execute("CREATE TABLE IF NOT EXISTS images (asset_id INTEGER, frame INTEGER, data BLOB)")
+
+db.commit()
 
 
 # Prepare labels
@@ -91,5 +91,4 @@ else:
             print(frame)
 
         db.executemany("INSERT INTO images (asset_id, frame, data) VALUES (?, ?, ?)", images)
-
-db.commit()
+        db.commit()

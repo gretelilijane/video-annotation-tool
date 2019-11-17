@@ -25,6 +25,10 @@ class TrackMode(DefaultMode):
 
         for i in range(len(src_markers)):
             coords = trackers[i].update(state.image)
+
+            if coords == None:
+                continue
+
             dst_marker = RectMarker(None, state.frame, src_markers[i].label_id, 1, *coords)
             dst_marker.save()
             state.add_marker(dst_marker)
