@@ -1,6 +1,7 @@
 import os
 import cv2
 import argparse
+import click
 
 from src import db
 
@@ -76,29 +77,35 @@ else:
         IMAGE_SIZE = (row[2], row[3])
     else:
         IMAGE_SIZE = tuple([int(size) for size in args.resize.split("x")])
-        FRAME_COUNT = 0
         images = []
 
         if os.path.isdir(INPUT_FILE_PATH):
-            for (dirpath, dirnames, filenames) in os.walk(INPUT_FILE_PATH):
-                for filename in filenames:
-                    image = cv2.imread(os.path.join(dirpath, filename))
-                    _, blob = cv2.imencode(".jpg", cv2.resize(image, IMAGE_SIZE))
+            files = []
 
-                    images.append((FRAME_COUNT, blob))
-                    FRAME_COUNT += 1
-                    print(filename)
+            for (dirpath, dirnames, filenames) in os.walk(INPUT_FILE_PATH):
+                files += [os.path.join(dirpath, filename) for filename in filenames]
+
+            FRAME_COUNT = len(files)
+
+            with click.progressbar(range(FRAME_COUNT)) as frames:
+                for frame in frames:
+                    image = cv2.imread(files[frame])
+                    crop_height = image.shape[1]*IMAGE_SIZE[1]//IMAGE_SIZE[0]
+                    crop_offset = (image.shape[0] - crop_height) // 2
+                    _, blob = cv2.imencode(".jpg", cv2.resize(image[crop_offset:(crop_offset+crop_height),:], IMAGE_SIZE))
+
+                    images.append((frame, blob))
         else:
             video = cv2.VideoCapture(INPUT_FILE_PATH)
             FRAME_COUNT = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 
             # Extract and resize all frames
-            for frame in range(FRAME_COUNT):
-                _, image = video.read()
-                _, blob = cv2.imencode(".jpg", cv2.resize(image, IMAGE_SIZE))
+            with click.progressbar(range(FRAME_COUNT)) as frames:
+                for frame in frames:
+                    _, image = video.read()
+                    _, blob = cv2.imencode(".jpg", cv2.resize(image, IMAGE_SIZE))
 
-                images.append((frame, blob))
-                print(frame)
+                    images.append((frame, blob))
 
         db.execute("INSERT INTO assets (name, frame_count, width, height) VALUES (?, ?, ?, ?)", (
             INPUT_FILE_NAME, FRAME_COUNT, *IMAGE_SIZE
