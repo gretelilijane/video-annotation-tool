@@ -9,7 +9,7 @@ from src import db
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="NO_INPUT")
 parser.add_argument("--output", default="output")
-parser.add_argument("--resize", default="640x360")
+parser.add_argument("--resize", default="640x480")
 parser.add_argument("--tracker", default="csrt")
 parser.add_argument("--labels", default="NO_LABEL")
 args = parser.parse_args()
@@ -92,8 +92,11 @@ else:
                     image = cv2.imread(files[frame])
                     crop_height = image.shape[1]*IMAGE_SIZE[1]//IMAGE_SIZE[0]
                     crop_offset = (image.shape[0] - crop_height) // 2
-                    _, blob = cv2.imencode(".jpg", cv2.resize(image[crop_offset:(crop_offset+crop_height),:], IMAGE_SIZE))
 
+                    if crop_height < image.shape[0]:
+                        image = image[crop_offset:(crop_offset+crop_height),:]
+
+                    _, blob = cv2.imencode(".jpg", cv2.resize(image, IMAGE_SIZE))
                     images.append((frame, blob))
         else:
             video = cv2.VideoCapture(INPUT_FILE_PATH)
