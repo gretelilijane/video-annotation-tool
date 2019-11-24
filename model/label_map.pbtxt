@@ -1,0 +1,20 @@
+item {
+    id: 1
+    name: 'animal'
+}
+
+item {
+    id: 2
+    name: 'car'
+}
+
+item {
+    id: 3
+    name: 'human'
+}
+
+item {
+    id: 4
+    name: 'bird'
+}
+

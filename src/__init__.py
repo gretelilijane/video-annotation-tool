@@ -9,7 +9,7 @@ from src import db
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="NO_INPUT")
 parser.add_argument("--output", default="output")
-parser.add_argument("--resize", default="640x480")
+parser.add_argument("--resize", default="640x360")
 parser.add_argument("--tracker", default="csrt")
 parser.add_argument("--labels", default="NO_LABEL")
 args = parser.parse_args()
@@ -30,7 +30,8 @@ LABEL_DISPLAY_HEIGHT = 30
 COLORS = (
     (164, 0, 0),
     (0, 164, 0),
-    (0, 0, 164)
+    (0, 0, 164),
+    (164, 164, 0)
 )
 
 try:
@@ -51,7 +52,6 @@ db.execute("CREATE TABLE IF NOT EXISTS images (asset_id INTEGER, frame INTEGER, 
 
 db.commit()
 
-
 # Prepare labels
 for label_name in USED_LABELS:
     try:
@@ -62,7 +62,6 @@ for label_name in USED_LABELS:
 
 db.execute("SELECT id, name FROM labels")
 LABELS = db.fetchall()
-
 
 # Prepare asset
 if INPUT_FILE_NAME == "NO_INPUT":

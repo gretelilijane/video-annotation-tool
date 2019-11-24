@@ -15,7 +15,7 @@ directory is `output/`, the default resized image size is `640x480` and the defa
 ## Training
 
 ```
-python3 -m object_detection.model_main --logtostderr --train_dir=output/ --pipeline_config_path=output/pipeline.config --model_dir=output/model/ --input_type image_tensor --input_shape 1,300,300,3
+python3 -m object_detection.model_main --logtostderr --pipeline_config_path=output/pipeline.config --input_type image_tensor --input_shape 1,300,300,3 --model_dir=output/model/
 ```
 
 ## TFLite

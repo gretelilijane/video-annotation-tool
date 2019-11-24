@@ -42,7 +42,7 @@ for asset in assets:
     print(asset_name)
 
     indices = np.array(range(frame_count))
-    test_set = np.random.choice(indices, frame_count // 5, replace=False)
+    test_set = np.random.choice(indices, frame_count // 4, replace=False)
     test_set_size += len(test_set)
 
     with click.progressbar(range(frame_count)) as frames:
