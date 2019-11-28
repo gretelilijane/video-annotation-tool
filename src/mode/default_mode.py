@@ -44,6 +44,12 @@ class DefaultMode:
             self.state.set_frame(self.state.frame + 1)
         elif key == ord("t") and self.state.frame < FRAME_COUNT - 1:
             self.state.enter_track_mode()
+        elif key == ord("c"):
+            for marker in self.state.get_markers():
+                marker.remove()
+
+            self.state.markers = []
+            self.state.draw_frame()
 
     def draw_frame(self, frame):
         if self.state.mouse is not None:

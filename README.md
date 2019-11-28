@@ -22,7 +22,7 @@ python3 -m object_detection.model_main --logtostderr --pipeline_config_path=outp
 
 Generate frozen graph with TensorFlow Lite compatible ops:
 ```
-python3 -m object_detection.export_tflite_ssd_graph --pipeline_config_path=output/pipeline.config --trained_checkpoint_prefix=output/model/model.ckpt-2412 --output_directory=output/graph --add_postprocessing_op=true
+python3 -m object_detection.export_tflite_ssd_graph --pipeline_config_path=output/pipeline.config --output_directory=output/graph --add_postprocessing_op=true --trained_checkpoint_prefix=output/model/model.ckpt-500
 ```
 
 Convert frozen graph to TensorFlow Lite optimized model:

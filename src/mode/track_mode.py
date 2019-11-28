@@ -4,7 +4,7 @@ from src.mode.default_mode import DefaultMode
 from src.track import create_tracker
 from src.marker.rect_marker import RectMarker
 from src.marker.interpolated_marker import InterpolatedMarker
-from src import TRACKER_NAME, TRACKER_FRAME_SKIP
+from src import TRACKER_NAME, TRACKER_FRAME_SKIP, USE_INTERPOLATION
 
 
 class TrackMode(DefaultMode):
@@ -33,8 +33,9 @@ class TrackMode(DefaultMode):
             dst_marker.save()
             state.add_marker(dst_marker)
 
-            for j in range(1, TRACKER_FRAME_SKIP):
-                m = InterpolatedMarker(None, src_frame + j, src_markers[i].label_id, 0, src_markers[i].DB_TABLE, src_markers[i].id, dst_marker.DB_TABLE, dst_marker.id)
-                m.save()
+            if USE_INTERPOLATION:
+                for j in range(1, TRACKER_FRAME_SKIP):
+                    m = InterpolatedMarker(None, src_frame + j, src_markers[i].label_id, 0, src_markers[i].DB_TABLE, src_markers[i].id, dst_marker.DB_TABLE, dst_marker.id)
+                    m.save()
 
         state.enter_default_mode()

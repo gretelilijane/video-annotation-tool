@@ -45,3 +45,13 @@ def get_markers_by_clause(clause, parameters):
 def get_markers_on_frame(frame):
     return get_markers_by_clause("WHERE asset_id=? AND frame=?", (ASSET_ID, frame))
 
+
+# Delete markers by clause
+def delete_markers_by_clause(clause, parameters):
+    markers = []
+
+    for table in marker_tables.keys():
+        print("DELETE FROM %s %s" % (table, clause))
+        db.execute("DELETE FROM %s %s" % (table, clause), parameters)
+
+    return markers

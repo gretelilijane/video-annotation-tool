@@ -39,7 +39,7 @@ for frame in range(FRAME_COUNT):
     num = interpreter.get_tensor(output_details[3]["index"])
 
     for i in range(boxes.shape[1]):
-        if scores[0, i] < 0.4:
+        if scores[0, i] < 0.25:
             continue
 
         box = boxes[0, i, :]

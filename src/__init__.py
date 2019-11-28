@@ -9,9 +9,11 @@ from src import db
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="NO_INPUT")
 parser.add_argument("--output", default="output")
-parser.add_argument("--resize", default="640x360")
+parser.add_argument("--resize", default="640x480")
 parser.add_argument("--tracker", default="csrt")
+parser.add_argument("--interpolate", default="false")
 parser.add_argument("--labels", default="NO_LABEL")
+parser.add_argument("--source", default="NONE")
 args = parser.parse_args()
 
 
@@ -20,10 +22,12 @@ WINDOW_NAME = "Video annotation tool"
 FRAME_TRACKBAR_NAME = "Frame"
 INPUT_FILE_PATH = args.input
 INPUT_FILE_NAME = os.path.split(args.input)[1]
+VIDEO_FRAME_SKIP = 10
 OUTPUT_DIRECTORY = args.output
 DB_PATH = os.path.join(OUTPUT_DIRECTORY, "sqlite.db")
 TRACKER_NAME = args.tracker
-TRACKER_FRAME_SKIP = 10
+TRACKER_FRAME_SKIP = 1
+USE_INTERPOLATION = args.interpolate == "true"
 SELECT_EDGE_DISTANCE = 10
 USED_LABELS = filter(lambda label: label != "NO_LABEL", args.labels.split(","))
 LABEL_DISPLAY_HEIGHT = 30
@@ -31,7 +35,9 @@ COLORS = (
     (164, 0, 0),
     (0, 164, 0),
     (0, 0, 164),
-    (164, 164, 0)
+    (164, 164, 0),
+    (0, 164, 164),
+    (164, 0, 164)
 )
 
 try:
@@ -99,15 +105,27 @@ else:
                     images.append((frame, blob))
         else:
             video = cv2.VideoCapture(INPUT_FILE_PATH)
-            FRAME_COUNT = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+            FRAME_COUNT = int(video.get(cv2.CAP_PROP_FRAME_COUNT) / VIDEO_FRAME_SKIP)
+            print(FRAME_COUNT)
 
             # Extract and resize all frames
             with click.progressbar(range(FRAME_COUNT)) as frames:
                 for frame in frames:
-                    _, image = video.read()
-                    _, blob = cv2.imencode(".jpg", cv2.resize(image, IMAGE_SIZE))
+                    try:
+                        for i in range(VIDEO_FRAME_SKIP):
+                            _, image = video.read()
+                            _, blob = cv2.imencode(".jpg", cv2.resize(image, IMAGE_SIZE))
 
-                    images.append((frame, blob))
+                        _, image = video.read()
+                        _, blob = cv2.imencode(".jpg", cv2.resize(image, IMAGE_SIZE))
+
+                        images.append((frame, blob))
+                    except cv2.error:
+                        FRAME_COUNT = frame
+                        break
+
+        print(FRAME_COUNT)
+        #exit()
 
         db.execute("INSERT INTO assets (name, frame_count, width, height) VALUES (?, ?, ?, ?)", (
             INPUT_FILE_NAME, FRAME_COUNT, *IMAGE_SIZE

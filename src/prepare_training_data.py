@@ -14,6 +14,7 @@ PRETRAINED_MODELS_PATH = os.path.realpath(os.path.join(os.path.dirname(__file__)
 PRETRAINED_MODEL_PATH = os.path.join(PRETRAINED_MODELS_PATH, "ssd_mobilenet_v1_quantized")
 PRETRAINED_MODEL_CKPT = os.path.join(PRETRAINED_MODEL_PATH, "model.ckpt")
 LABEL_MAP_PATH = os.path.join(OUTPUT_DIRECTORY, "label_map.pbtxt")
+LABEL_TXT_PATH = os.path.join(OUTPUT_DIRECTORY, "labels.txt")
 TEST_RECORD_PATH = os.path.join(OUTPUT_DIRECTORY, "test.record")
 TRAIN_RECORD_PATH = os.path.join(OUTPUT_DIRECTORY, "train.record")
 
@@ -43,7 +44,6 @@ for asset in assets:
 
     indices = np.array(range(frame_count))
     test_set = np.random.choice(indices, frame_count // 4, replace=False)
-    test_set_size += len(test_set)
 
     with click.progressbar(range(frame_count)) as frames:
         for frame in frames:
@@ -52,6 +52,9 @@ for asset in assets:
 
             markers = marker_db.get_markers_by_clause("WHERE asset_id=? AND frame=?", (asset_id, frame))
             coords = [marker.get_coords() / max_coords for marker in markers]
+
+            if len(markers) == 0:
+                continue
 
             for marker in markers:
                 if not marker.label_id in used_label_ids:
@@ -97,6 +100,7 @@ for asset in assets:
             }))
 
             if frame in test_set:
+                test_set_size += 1
                 test_writer.write(tf_example.SerializeToString())
             else:
                 train_writer.write(tf_example.SerializeToString())
@@ -125,7 +129,15 @@ with open(os.path.join(OUTPUT_DIRECTORY, "pipeline.config"), "w") as pipeline:
         pipeline.write(content)
 
 
-# Generate label map
+# Generate label maps
 with open(LABEL_MAP_PATH, "w") as label_map:
+    label_map.write("item {\n    id: 0\n    name: 'background'\n}\n\n")
+
     for index, label_id in enumerate(used_label_ids):
         label_map.write("item {\n    id: %d\n    name: '%s'\n}\n\n" % (index + 1, label_names[label_id]))
+
+with open(LABEL_TXT_PATH, "w") as label_txt:
+    label_txt.write("0 background")
+
+    for index, label_id in enumerate(used_label_ids):
+        label_txt.write("\n%d %s" % (index + 1, label_names[label_id]))
