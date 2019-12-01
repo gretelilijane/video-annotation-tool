@@ -14,6 +14,7 @@ parser.add_argument("--tracker", default="csrt")
 parser.add_argument("--interpolate", default="false")
 parser.add_argument("--labels", default="NO_LABEL")
 parser.add_argument("--source", default="NONE")
+parser.add_argument("--only", default="ALL")
 args = parser.parse_args()
 
 

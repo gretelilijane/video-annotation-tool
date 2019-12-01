@@ -5,7 +5,7 @@ import tensorflow as tf
 import click
 import re
 
-from src import db, OUTPUT_DIRECTORY
+from src import db, OUTPUT_DIRECTORY, args
 from src.marker import marker_db
 
 
@@ -21,12 +21,14 @@ TRAIN_RECORD_PATH = os.path.join(OUTPUT_DIRECTORY, "train.record")
 
 # Get labels
 label_names = {}
+only_labels = args.only.split(",")
 
 db.execute("SELECT id, name FROM labels")
 
 for row in db.fetchall():
-    label_names[row[0]] = row[1]
-
+    if args.only == "ALL" or row[1] in only_labels:
+        print(row)
+        label_names[row[0]] = row[1]
 
 # Generate TF records
 test_writer = tf.io.TFRecordWriter(TEST_RECORD_PATH)
@@ -51,10 +53,7 @@ for asset in assets:
             image_data = db.fetchone()[0]
 
             markers = marker_db.get_markers_by_clause("WHERE asset_id=? AND frame=?", (asset_id, frame))
-
-            #for marker in markers:
-            #    marker.label_id = 1
-
+            markers = list(filter(lambda marker: marker.label_id in label_names, markers))
             coords = [marker.get_coords() / max_coords for marker in markers]
 
             if len(markers) == 0:
