@@ -51,6 +51,10 @@ for asset in assets:
             image_data = db.fetchone()[0]
 
             markers = marker_db.get_markers_by_clause("WHERE asset_id=? AND frame=?", (asset_id, frame))
+
+            #for marker in markers:
+            #    marker.label_id = 1
+
             coords = [marker.get_coords() / max_coords for marker in markers]
 
             if len(markers) == 0:
@@ -137,7 +141,8 @@ with open(LABEL_MAP_PATH, "w") as label_map:
         label_map.write("item {\n    id: %d\n    name: '%s'\n}\n\n" % (index + 1, label_names[label_id]))
 
 with open(LABEL_TXT_PATH, "w") as label_txt:
-    label_txt.write("0 background")
-
     for index, label_id in enumerate(used_label_ids):
-        label_txt.write("\n%d %s" % (index + 1, label_names[label_id]))
+        if index > 0:
+            label_txt.write("\n")
+
+        label_txt.write("%d %s" % (index , label_names[label_id]))
