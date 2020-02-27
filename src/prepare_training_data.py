@@ -42,10 +42,17 @@ test_set_size = 0
 for asset in assets:
     asset_id, asset_name, frame_count, width, height = asset
     max_coords = np.array((width, height, width, height))
-    print(asset_name)
 
     indices = np.array(range(frame_count))
-    test_set = np.random.choice(indices, frame_count // 4, replace=False)
+
+    if "train" in asset_name:
+        test_set = np.array([])
+    elif "test" in asset_name:
+        test_set = np.array(indices)
+    else:
+        test_set = np.random.choice(indices, frame_count // 4, replace=False)
+
+    print(asset_name, test_set)
 
     with click.progressbar(range(frame_count)) as frames:
         for frame in frames:

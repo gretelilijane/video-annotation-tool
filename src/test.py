@@ -44,7 +44,11 @@ for frame in range(FRAME_COUNT):
 
         box = boxes[0, i, :]
 
-        if isnan(box[0]) or isnan(box[1]) or isnan(box[2]) or isnan(box[3]) or box[0] < 0 or box[1] < 0 or box[2] > 1 or box[3] > 1:
+        if isnan(box[0]) or isnan(box[1]) \
+            or isnan(box[2]) or isnan(box[3]) \
+            or box[0] < 0 or box[1] < 0 \
+            or box[0] > 1 or box[1] > 1 \
+            or box[2] > 1 or box[3] > 1:
             continue
 
         x0 = int(box[1] * image.shape[1])
@@ -52,12 +56,12 @@ for frame in range(FRAME_COUNT):
         x1 = int(box[3] * image.shape[1])
         y1 = int(box[2] * image.shape[0])
 
-        cv2.rectangle(image, (x0, y0), (x1, y1), (255, 0, 0), 2)
-        cv2.rectangle(image, (x0, y0), (x0 + 100, y0 - 30), (255, 0, 0), -1)
+        cv2.rectangle(image, (x0, y0), (x1, y1), (255, 0, 0), 1)
+        cv2.rectangle(image, (x0, y1), (x0 + 150, y1 - 30), (255, 0, 0), -1)
         cv2.putText(image,
-                str(int(labels[0, i])), (x0, y0),
+                str(int(labels[0, i]) + 1) + " (" + str(round(scores[0, i]*100)) + "%)", (x0, y1),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                1, (255, 255, 255), 2)
+                1, (255, 255, 255), 1)
 
     cv2.imshow(WINDOW_NAME, image)
 
